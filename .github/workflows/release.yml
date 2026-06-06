@@ -23,21 +23,8 @@ jobs:
         shell: bash
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CARGO_VERSION=$(python - <<'PY'
-from pathlib import Path
-for line in Path('src-tauri/Cargo.toml').read_text().splitlines():
-    if line.startswith('version = '):
-        print(line.split('"')[1])
-        break
-PY
-)
-          TAURI_VERSION=$(python - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('src-tauri/tauri.conf.json').read_text())['version'])
-PY
-)
-
+          CARGO_VERSION=$(python3 -c "from pathlib import Path; print(next(line.split('\\\"')[1] for line in Path('src-tauri/Cargo.toml').read_text().splitlines() if line.startswith('version = ')))")
+          TAURI_VERSION=$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path('src-tauri/tauri.conf.json').read_text())['version'])")
           test "$TAG_VERSION" = "$CARGO_VERSION"
           test "$TAG_VERSION" = "$TAURI_VERSION"
 
@@ -71,28 +58,6 @@ PY
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-
-      - name: Verify tag matches app version
-        shell: bash
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CARGO_VERSION=$(python - <<'PY'
-from pathlib import Path
-for line in Path('src-tauri/Cargo.toml').read_text().splitlines():
-    if line.startswith('version = '):
-        print(line.split('"')[1])
-        break
-PY
-)
-          TAURI_VERSION=$(python - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('src-tauri/tauri.conf.json').read_text())['version'])
-PY
-)
-
-          test "$TAG_VERSION" = "$CARGO_VERSION"
-          test "$TAG_VERSION" = "$TAURI_VERSION"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -129,28 +94,6 @@ PY
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify tag matches app version
-        shell: bash
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CARGO_VERSION=$(python - <<'PY'
-from pathlib import Path
-for line in Path('src-tauri/Cargo.toml').read_text().splitlines():
-    if line.startswith('version = '):
-        print(line.split('"')[1])
-        break
-PY
-)
-          TAURI_VERSION=$(python - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('src-tauri/tauri.conf.json').read_text())['version'])
-PY
-)
-
-          test "$TAG_VERSION" = "$CARGO_VERSION"
-          test "$TAG_VERSION" = "$TAURI_VERSION"
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -181,28 +124,6 @@ PY
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-
-      - name: Verify tag matches app version
-        shell: bash
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CARGO_VERSION=$(python - <<'PY'
-from pathlib import Path
-for line in Path('src-tauri/Cargo.toml').read_text().splitlines():
-    if line.startswith('version = '):
-        print(line.split('"')[1])
-        break
-PY
-)
-          TAURI_VERSION=$(python - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('src-tauri/tauri.conf.json').read_text())['version'])
-PY
-)
-
-          test "$TAG_VERSION" = "$CARGO_VERSION"
-          test "$TAG_VERSION" = "$TAURI_VERSION"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
