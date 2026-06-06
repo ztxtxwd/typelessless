@@ -67,7 +67,6 @@ PY
 
   build-macos:
     runs-on: macos-14
-    environment: prod
     needs: validate
     timeout-minutes: 60
     steps:
@@ -125,7 +124,6 @@ PY
 
   build-linux:
     runs-on: ubuntu-22.04
-    environment: prod
     needs: validate
     timeout-minutes: 60
     steps:
@@ -179,7 +177,6 @@ PY
 
   build-windows:
     runs-on: windows-latest
-    environment: prod
     needs: validate
     timeout-minutes: 60
     steps:
