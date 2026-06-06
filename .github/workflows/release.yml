@@ -44,7 +44,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Light Whisper ${{ github.ref_name }}"
+          releaseName: "Typelessless ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install."
           releaseDraft: true
           prerelease: false
@@ -81,7 +81,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Light Whisper ${{ github.ref_name }}"
+          releaseName: "Typelessless ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install."
           releaseDraft: true
           prerelease: false
@@ -113,7 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Light Whisper ${{ github.ref_name }}"
+          releaseName: "Typelessless ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install."
           releaseDraft: true
           prerelease: false

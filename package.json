@@ -1,0 +1,14 @@
+{
+  "name": "typelessless-tooling",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Build-time tooling for the Typelessless Tauri app (icon generation only).",
+  "type": "module",
+  "scripts": {
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.5"
+  }
+}

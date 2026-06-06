@@ -9,47 +9,221 @@ html, body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #overlay {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: 34px;
+  background: rgba(20, 20, 22, 0.95);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* uniform soft shadow on all four sides */
+  box-shadow: 0 0 18px 2px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  -webkit-app-region: drag;
+}
+
+#progress-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  opacity: 0;
+}
+
+#overlay.thinking #progress-bg {
+  opacity: 1;
+  animation: progress-fill 2.4s ease-in-out infinite;
+}
+
+@keyframes progress-fill {
+  0%   { width: 0%; }
+  92%  { width: 100%; }
+  100% { width: 100%; }
+}
+
+#content {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  background: rgba(20, 20, 25, 0.92);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  width: 280px;
-  height: 66px;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px;
+  gap: 8px;
 }
 
-#rec-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ff4444;
+.pill-btn {
   flex-shrink: 0;
-  animation: pulse 1.2s ease-in-out infinite;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-app-region: no-drag;
+  outline: none;
+  padding: 0;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+.pill-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pill-btn:active {
+  transform: scale(0.92);
+}
+
+.pill-btn.confirm {
+  background: #ffffff;
+  color: #111111;
+}
+
+.pill-btn.confirm:hover {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+#center-area {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
 #waveform {
-  flex: 1;
-  height: 50px;
+  display: block;
+  width: 38px;
+  height: 22px;
+  transition: opacity 0.2s ease;
 }
 
-#timer {
-  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  flex-shrink: 0;
-  min-width: 32px;
-  text-align: right;
+#thinking-label {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  /* Base color is dim; a brighter band sweeps across the glyphs. */
+  color: transparent;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.35) 35%,
+    rgba(255, 255, 255, 1.0)  50%,
+    rgba(255, 255, 255, 0.35) 65%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+#overlay.thinking #thinking-label {
+  animation: thinking-shimmer 1.6s linear infinite;
+}
+
+@keyframes thinking-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* During thinking the pill keeps the same width as the recording state — the
+   "Thinking" label is absolutely positioned over the whole pill (covering the
+   hidden buttons + waveform), so it never grows the layout. */
+
+/* Loading state: pill is shown but mic isn't capturing yet. Hide buttons +
+   waveform and show three pulsing dots in the center. */
+#loading-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+#loading-spinner span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  animation: dot-pulse 1.0s ease-in-out infinite;
+}
+
+#loading-spinner span:nth-child(2) { animation-delay: 0.15s; }
+#loading-spinner span:nth-child(3) { animation-delay: 0.30s; }
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%      { opacity: 1.0; transform: scale(1.15); }
+}
+
+#overlay.loading #waveform {
+  opacity: 0;
+}
+
+#overlay.loading .pill-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#overlay.loading #loading-spinner {
+  opacity: 1;
+}
+
+#overlay.loading #center-area {
+  min-width: 38px;
+}
+
+#thinking-label.hidden {
+  opacity: 0;
+}
+
+#overlay.thinking #waveform {
+  opacity: 0;
+}
+
+#overlay.thinking #thinking-label {
+  opacity: 1;
+}
+
+#overlay.thinking .pill-btn {
+  opacity: 0;
+  pointer-events: none;
 }

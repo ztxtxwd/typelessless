@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Light Whisper needs microphone access to record audio for speech-to-text transcription.</string>
+	<string>Typelessless needs microphone access to record audio for speech-to-text transcription.</string>
 	<key>LSUIElement</key>
 	<true/>
 </dict>

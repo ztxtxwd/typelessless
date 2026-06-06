@@ -1,29 +1,34 @@
-# Light Whisper
+# Typelessless
 
 A lightweight desktop app for global voice-to-text. Press **Alt+Space** anywhere to start recording, press again to transcribe and paste the result into the active application.
 
+Speech is transcribed and polished by **Doubao** (Volcengine ARK Responses API), so the result you paste is already cleaned-up text — filler words removed, punctuation added, optional follow-up instructions honored.
+
 Built with [Tauri v2](https://v2.tauri.app/) (Rust backend, vanilla JS frontend).
 
-![demo](https://github.com/aluzed/light-whisper/raw/main/demo.gif)
+![demo](./demo.gif)
+
+## Credit
+
+Typelessless is a fork of [Light Whisper](https://github.com/aluzed/light-whisper) by Upgradists, used and redistributed under its MIT license. The original UI shell, hotkey loop, audio capture pipeline, and tray scaffolding all come from that project. The fork swaps the local Whisper / Parakeet engines for a cloud Doubao Responses-API engine and adds prompt-driven post-processing. See [LICENSE](./LICENSE) and the upstream repo for the original copyright notice.
 
 ## Features
 
-- **Global hotkey** (Alt+Space) works from any application
-- **Two STT engines:**
-  - [Whisper](https://github.com/openai/whisper) (OpenAI) via whisper.cpp — models from 40 MB to 500 MB
-  - [Parakeet TDT v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) (NVIDIA) via ONNX Runtime — ~670 MB, 25 languages, auto-detection
-- **French & English** support (and more with Parakeet)
-- **Auto-paste**: transcribed text is automatically pasted via clipboard + keyboard simulation
-- **Minimal UI**: frameless overlay during recording, settings accessible from the tray icon
-- **Auto-opens settings** on first launch if no model is downloaded
+- **Global hotkey** (Alt+Space, rebindable) works from any application
+- **Doubao transcription + polishing** in one round-trip — the model fixes filler words, punctuation, and obvious disfluencies while preserving your intent
+- **Inline instructions** — speaking commands like "改写成正式邮件" or "转成 bullet points" makes the model reformat the output before it gets pasted
+- **Auto-paste** via clipboard + simulated Cmd/Ctrl+V into the previously focused window
+- **Minimal UI** — a frameless overlay during recording, settings reachable from the tray icon
+- **Auto-opens settings** on first launch when no API key is configured
 
 ## Dependencies
 
 - [Rust](https://rustup.rs/) (1.70+)
-- CMake + C/C++ compiler
 - macOS 11+, Windows 10+, or Linux (X11 recommended)
 
-### Prerequisites install
+CMake / a C++ toolchain are no longer required — the local whisper.cpp build was removed when the engine was switched to the cloud Doubao API.
+
+### Prerequisites
 
 ```bash
 # Install Rust
@@ -31,15 +36,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Install Tauri CLI
 cargo install tauri-cli --version "^2"
-```
-
-### MacOS: install Homebrew (https://brew.sh/) then CMake
-
-```bash
-# Optional if you already have homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-brew install cmake
 ```
 
 ### Linux (Ubuntu 22.04+ / Debian 12+)
@@ -53,7 +49,6 @@ sudo apt-get install -y \
   libssl-dev \
   libasound2-dev \
   libxdo-dev \
-  cmake \
   build-essential
 ```
 
@@ -68,7 +63,6 @@ sudo dnf install -y \
   openssl-devel \
   alsa-lib-devel \
   libxdo-devel \
-  cmake \
   gcc-c++
 ```
 
@@ -78,7 +72,7 @@ sudo dnf install -y \
 # Development (hot reload frontend, debug backend)
 cargo tauri dev
 
-# Production build (creates .app + .dmg on macOS, .msi on Windows)
+# Production build
 cargo tauri build
 
 # Debug build (faster, no bundling optimization)
@@ -88,61 +82,49 @@ cargo tauri build --debug
 cd src-tauri && cargo build
 ```
 
-First build takes ~5 minutes due to whisper.cpp compilation via CMake.
-
-**macOS note:** `CMAKE_OSX_DEPLOYMENT_TARGET=11.0` is required for whisper.cpp's `std::filesystem` usage. This is set automatically via `src-tauri/.cargo/config.toml`.
-
 ## Usage
 
-1. **Launch the app** — if no model is downloaded, the Settings window opens automatically
-2. **Choose an STT engine** (Whisper or Parakeet) and download the model
+1. **Launch the app** — if no API key is configured, the Settings window opens automatically
+2. **Paste your Doubao API key** (`ARK_API_KEY` from the Volcengine ARK console) and choose a model
 3. **Save settings** and close the window
-4. **Record** — press `Alt+Space` to start, `Alt+Space` again to stop
-5. **Result** — transcribed text is automatically pasted into the active application
-6. Access settings anytime via the **tray icon** (left or right click)
+4. **Record** — press `Alt+Space` to start, `Alt+Space` again (or click ✓) to transcribe; press `Esc` (or click ✕) to cancel
+5. **Result** — transcribed and polished text is automatically pasted into whatever app was focused
+6. Access settings any time via the **tray icon**
 
-## Available Models
+## Configuration
 
-### Whisper (OpenAI)
-
-| Model | Size | Speed | Quality |
-|-------|------|-------|---------|
-| tiny | ~40 MB | Very fast | Basic |
-| base | ~60 MB | Fast | Recommended |
-| small | ~200 MB | Medium | Good |
-| medium | ~500 MB | Slow | Excellent |
-
-### Parakeet TDT v3 (NVIDIA)
-
-| Model | Size | Speed | Quality |
-|-------|------|-------|---------|
-| int8 quantized | ~670 MB | Fast | Excellent (WER 7.7% FR) |
-
-Parakeet supports 25 European languages with automatic language detection. Models are downloaded from HuggingFace and stored in `~/lightwhisper/models/`.
+| Setting | What it does |
+|---------|--------------|
+| Audio Input Device | cpal input device. `default` uses the OS default. |
+| Doubao API Key | `ARK_API_KEY` from the [Volcengine ARK console](https://console.volcengine.com/ark). Stored in plaintext in `config.json`. |
+| Doubao Model | Defaults to `doubao-seed-2-0-lite-260428`. Any ARK Responses-compatible audio-input model can be entered. |
+| Language | Default prompt language sent alongside the audio (`auto`, `zh`, `en`, `fr`). |
+| Shortcut | Global hotkey (default `Alt+Space`). Click **Assign** in Settings, then press the new combo. |
 
 ## Permissions (macOS)
 
-Light Whisper requests both permissions on first launch.
-
-- **Microphone**: required for audio capture. Go to **System Settings > Privacy & Security > Microphone** and enable Light Whisper. Without this permission, macOS silently feeds empty audio to the app — recording appears to work but the waveform stays flat and no transcription is produced.
-- **Accessibility**: required for auto-paste (keyboard simulation). Go to **System Settings > Privacy & Security > Accessibility** and enable Light Whisper. The app will prompt on first launch; if denied, transcribed text cannot be pasted automatically.
+- **Microphone**: required for audio capture. **System Settings > Privacy & Security > Microphone** → enable Typelessless. Without it macOS feeds silent audio and recording produces nothing.
+- **Accessibility**: required for auto-paste (keyboard simulation). **System Settings > Privacy & Security > Accessibility** → enable Typelessless.
 
 ## Project Structure
 
 ```
-light-whisper/
+typelessless/
 ├── src/                        # Frontend (vanilla HTML/JS/CSS)
-│   ├── index.html              # Recorder overlay (280x80 frameless window)
-│   ├── settings.html           # Settings (engine, model, device, language)
-│   └── settings.js / .css
+│   ├── index.html              # Recorder overlay (frameless window)
+│   ├── settings.html           # Settings (device, API key, model, language, shortcut)
+│   └── settings.js / *.css
 ├── src-tauri/                  # Rust backend
 │   ├── src/
-│   │   ├── lib.rs              # Tauri setup, commands, tray, shortcut handler
+│   │   ├── lib.rs              # Tauri setup, plugin wiring
+│   │   ├── commands.rs         # Tauri command handlers
+│   │   ├── recording.rs        # Recording / cancel / confirm flow
 │   │   ├── audio.rs            # Audio capture (cpal) on dedicated thread
-│   │   ├── stt.rs              # STT engine dispatch (Whisper + Parakeet)
+│   │   ├── stt.rs              # Doubao Responses API client
 │   │   ├── paste.rs            # Clipboard + keyboard simulation (enigo)
 │   │   ├── config.rs           # JSON config I/O, directory paths
-│   │   └── model_manager.rs    # Model download with streaming progress
+│   │   ├── tray.rs             # System tray menu
+│   │   └── state.rs            # Shared AppState
 │   └── Cargo.toml
 └── README.md
 ```
@@ -150,19 +132,17 @@ light-whisper/
 ## Storage
 
 ```
-~/lightwhisper/
-├── config.json                     # {audio_device, model_size, language, engine}
-├── models/
-│   ├── ggml-{size}.bin             # Whisper models
-│   └── parakeet-tdt/               # Parakeet ONNX models
-│       ├── encoder-model.onnx
-│       ├── decoder_joint-model.onnx
-│       └── vocab.txt
-└── temp/                           # Temporary WAV files
+~/typelessless/
+├── config.json                # {audio_device, language, shortcut, api_key, model}
+└── temp/                      # Temporary WAV files (macOS/Linux)
 ```
 
-Windows uses `%TEMP%\lightwhisper\` for temp files.
+Windows uses `%TEMP%\typelessless\` for temp files.
+
+## Privacy
+
+Audio is sent to Volcengine's ARK API for transcription. Read their terms before using this on sensitive recordings. No audio is stored or sent anywhere else by this app.
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE). Original work © Upgradists / Light Whisper contributors; modifications © Typelessless contributors.

@@ -1,30 +1,26 @@
 SHELL := /bin/bash
 
 # Paths
-APP_NAME   := Light Whisper
+APP_NAME   := Typelessless
 BUNDLE_DIR := src-tauri/target/release/bundle
 DEBUG_DIR  := src-tauri/target/debug/bundle
 INSTALL_DIR := /Applications
 
-# Python venv for icon generation
-VENV       := .venv
-PYTHON     := $(VENV)/bin/python3
-
 # ─── Main targets ───
 
-.PHONY: dev build install uninstall icons clean help
+.PHONY: dev build build-debug install uninstall icons clean check clippy help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-dev: icons ## Run in development mode (hot reload)
+dev: ## Run in development mode (hot reload)
 	cargo tauri dev
 
-build: icons ## Build production release (.app + .dmg)
+build: ## Build production release (.app + .dmg)
 	cargo tauri build
 
-build-debug: icons ## Build debug version (faster)
+build-debug: ## Build debug version (faster)
 	cargo tauri build --debug
 
 install: build ## Build and install to /Applications
@@ -37,18 +33,15 @@ uninstall: ## Remove from /Applications and clean user data
 	@echo "Removing $(APP_NAME)..."
 	@rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 	@echo "Removed from $(INSTALL_DIR)."
-	@echo "User data in ~/lightwhisper/ was kept. Remove manually if needed."
+	@echo "User data in ~/typelessless/ was kept. Remove manually if needed."
 
 # ─── Icons ───
 
-icons: $(VENV) ## Generate all icons from SVG sources
-	@$(PYTHON) scripts/generate-icons.py
+icons: node_modules ## Regenerate all icon assets from logo.png
+	@node scripts/generate-icons.mjs
 
-$(VENV): scripts/generate-icons.py
-	@echo "Setting up Python venv for icon generation..."
-	@python3 -m venv $(VENV)
-	@$(VENV)/bin/pip install -q cairosvg Pillow
-	@touch $(VENV)
+node_modules: package.json
+	@npm install --no-audit --no-fund
 
 # ─── Utilities ───
 
@@ -60,5 +53,5 @@ clippy: ## Run Rust linter
 
 clean: ## Remove build artifacts
 	cd src-tauri && cargo clean
-	@rm -rf $(VENV)
+	@rm -rf node_modules
 	@echo "Cleaned."

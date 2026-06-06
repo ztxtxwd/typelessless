@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Light Whisper - Settings</title>
+  <title>Typelessless - Settings</title>
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
@@ -19,20 +19,16 @@
     </section>
 
     <section>
-      <label for="engine">STT Engine</label>
-      <select id="engine">
-        <option value="whisper">Whisper (OpenAI)</option>
-        <option value="parakeet">Parakeet TDT v3 (NVIDIA) ~670 MB</option>
-      </select>
+      <label for="api-key">Doubao API Key (ARK_API_KEY)</label>
+      <input type="password" id="api-key" placeholder="sk-..." autocomplete="off">
+      <div class="hint">Get a key from the Volcengine ARK console.</div>
     </section>
 
-    <section id="whisper-options">
-      <label for="model-size">Whisper Model</label>
-      <select id="model-size">
-        <option value="tiny">Tiny (~40 MB) - Fastest</option>
-        <option value="base" selected>Base (~60 MB) - Recommended</option>
-        <option value="small">Small (~200 MB) - Better accuracy</option>
-        <option value="medium">Medium (~500 MB) - Best accuracy</option>
+    <section>
+      <label for="model">Doubao Model</label>
+      <select id="model">
+        <option value="doubao-seed-2-0-lite-260428" selected>doubao-seed-2-0-lite-260428</option>
+        <option value="doubao-seed-2-0-mini-260428">doubao-seed-2-0-mini-260428</option>
       </select>
     </section>
 
@@ -40,9 +36,19 @@
       <label for="language">Language</label>
       <select id="language">
         <option value="auto">Auto-detect</option>
-        <option value="fr">French</option>
+        <option value="zh">Chinese</option>
         <option value="en">English</option>
+        <option value="fr">French</option>
       </select>
+    </section>
+
+    <section>
+      <label for="system-prompt">System Prompt</label>
+      <textarea id="system-prompt" rows="8" placeholder="System prompt sent to Doubao..."></textarea>
+      <div class="hint">
+        Controls how Doubao transcribes and polishes your audio. Leave blank to use the built-in default.
+        <button type="button" id="system-prompt-reset" class="link-btn">Reset to default</button>
+      </div>
     </section>
 
     <section id="shortcut-section">
@@ -53,17 +59,6 @@
         <button id="shortcut-default-btn" type="button">Default</button>
       </div>
       <div id="shortcut-error" class="shortcut-error"></div>
-    </section>
-
-    <section id="model-section">
-      <div id="model-status"></div>
-      <button id="download-btn">Download Model</button>
-      <div id="progress-container" class="hidden">
-        <div id="progress-bar">
-          <div id="progress-fill"></div>
-        </div>
-        <div id="progress-text">0%</div>
-      </div>
     </section>
 
     <section>

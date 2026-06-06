@@ -6,39 +6,33 @@ use std::path::PathBuf;
 #[serde(default)]
 pub struct AppConfig {
     pub audio_device: String,
-    pub model_size: String,
     pub language: String,
-    pub engine: String,
     pub shortcut: String,
+    pub api_key: String,
+    pub model: String,
+    pub system_prompt: String,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             audio_device: "default".to_string(),
-            model_size: "base".to_string(),
             language: "auto".to_string(),
-            engine: "whisper".to_string(),
             shortcut: "Alt+Space".to_string(),
+            api_key: String::new(),
+            model: "doubao-seed-2-0-lite-260428".to_string(),
+            system_prompt: crate::stt::DEFAULT_SYSTEM_PROMPT.to_string(),
         }
     }
 }
 
 pub fn config_dir() -> PathBuf {
     let home = dirs::home_dir().expect("Cannot find home directory");
-    home.join("lightwhisper")
+    home.join("typelessless")
 }
 
 pub fn config_path() -> PathBuf {
     config_dir().join("config.json")
-}
-
-pub fn models_dir() -> PathBuf {
-    config_dir().join("models")
-}
-
-pub fn parakeet_models_dir() -> PathBuf {
-    models_dir().join("parakeet-tdt")
 }
 
 pub fn load_config() -> AppConfig {
@@ -65,6 +59,4 @@ pub fn save_config_to_disk(config: &AppConfig) -> Result<(), String> {
 
 pub fn ensure_dirs() {
     let _ = fs::create_dir_all(config_dir());
-    let _ = fs::create_dir_all(models_dir());
-    let _ = fs::create_dir_all(parakeet_models_dir());
 }

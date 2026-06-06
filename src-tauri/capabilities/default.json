@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "Default capabilities for Light Whisper",
+  "description": "Default capabilities for Typelessless",
   "windows": ["recorder", "settings"],
   "permissions": [
     "core:default",

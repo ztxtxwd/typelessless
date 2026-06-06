@@ -31,6 +31,9 @@ impl AudioRecorder {
         self.recording.load(Ordering::SeqCst)
     }
 
+    /// Spawn the recording thread and BLOCK until the audio stream has either
+    /// successfully started capturing or failed. This way callers know that
+    /// when `start()` returns Ok the microphone is actively recording.
     pub fn start(&mut self, device_name: &str, app: AppHandle) -> Result<(), String> {
         if self.is_recording() {
             return Err("Already recording".to_string());
@@ -44,15 +47,39 @@ impl AudioRecorder {
         let sample_rate_out = Arc::clone(&self.sample_rate);
         let device_name = device_name.to_string();
 
+        let (ready_tx, ready_rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
+
         let handle = std::thread::spawn(move || {
-            if let Err(e) = run_recording(device_name, samples, recording, sample_rate_out, app.clone()) {
+            if let Err(e) = run_recording(
+                device_name,
+                samples,
+                recording.clone(),
+                sample_rate_out,
+                app.clone(),
+                ready_tx,
+            ) {
                 eprintln!("Recording error: {}", e);
+                recording.store(false, Ordering::SeqCst);
                 let _ = app.emit("app-error", format!("Audio error: {}", e));
             }
         });
 
-        self.thread_handle = Some(handle);
-        Ok(())
+        // Wait (with a timeout) for the audio thread to confirm capture started.
+        match ready_rx.recv_timeout(std::time::Duration::from_secs(3)) {
+            Ok(Ok(())) => {
+                self.thread_handle = Some(handle);
+                Ok(())
+            }
+            Ok(Err(e)) => {
+                self.recording.store(false, Ordering::SeqCst);
+                let _ = handle.join();
+                Err(e)
+            }
+            Err(_) => {
+                self.recording.store(false, Ordering::SeqCst);
+                Err("Timed out waiting for audio device to start".to_string())
+            }
+        }
     }
 
     pub fn stop(&mut self) -> Result<(Vec<f32>, u32), String> {
@@ -80,22 +107,40 @@ fn run_recording(
     recording: Arc<AtomicBool>,
     sample_rate_out: Arc<Mutex<u32>>,
     app: AppHandle,
+    ready_tx: std::sync::mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
+    // Helper to forward errors back to the caller via the ready channel before
+    // returning them. We only send one message on the channel — after that
+    // signaling is done via the `recording` AtomicBool / app events.
+    let signal_err = |tx: &std::sync::mpsc::SyncSender<Result<(), String>>, err: String| -> String {
+        let _ = tx.send(Err(err.clone()));
+        err
+    };
     let host = cpal::default_host();
 
     let device = if device_name == "default" {
-        host.default_input_device()
-            .ok_or("No default input device")?
+        match host.default_input_device() {
+            Some(d) => d,
+            None => return Err(signal_err(&ready_tx, "No default input device".to_string())),
+        }
     } else {
-        host.input_devices()
-            .map_err(|e| format!("Cannot enumerate devices: {}", e))?
-            .find(|d| d.name().map(|n| n == device_name).unwrap_or(false))
-            .ok_or_else(|| format!("Device '{}' not found", device_name))?
+        let iter = host
+            .input_devices()
+            .map_err(|e| signal_err(&ready_tx, format!("Cannot enumerate devices: {}", e)))?;
+        match iter.into_iter().find(|d| d.name().map(|n| n == device_name).unwrap_or(false)) {
+            Some(d) => d,
+            None => {
+                return Err(signal_err(
+                    &ready_tx,
+                    format!("Device '{}' not found", device_name),
+                ))
+            }
+        }
     };
 
     let config = device
         .default_input_config()
-        .map_err(|e| format!("No default input config: {}", e))?;
+        .map_err(|e| signal_err(&ready_tx, format!("No default input config: {}", e)))?;
 
     let sr = config.sample_rate().0;
     *sample_rate_out.lock().unwrap() = sr;
@@ -177,14 +222,21 @@ fn run_recording(
                 None,
             )
         }
-        _ => return Err("Unsupported sample format".to_string()),
+        _ => {
+            return Err(signal_err(
+                &ready_tx,
+                "Unsupported sample format".to_string(),
+            ))
+        }
     }
-    .map_err(|e| format!("Failed to build stream: {}", e))?;
+    .map_err(|e| signal_err(&ready_tx, format!("Failed to build stream: {}", e)))?;
 
     stream
         .play()
-        .map_err(|e| format!("Failed to start stream: {}", e))?;
+        .map_err(|e| signal_err(&ready_tx, format!("Failed to start stream: {}", e)))?;
 
+    // Signal the caller that the audio device is now actively capturing.
+    let _ = ready_tx.send(Ok(()));
     let _ = app.emit("recording-started", ());
 
     // Keep thread alive while recording

@@ -13,10 +13,10 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let _tray = TrayIconBuilder::new()
         .icon(icon)
-        .icon_as_template(true)
+        .icon_as_template(false)
         .menu(&menu)
         .show_menu_on_left_click(true)
-        .tooltip("Light Whisper")
+        .tooltip("Typelessless")
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
                 if let Some(window) = app.get_webview_window("settings") {

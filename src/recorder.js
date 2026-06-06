@@ -1,88 +1,153 @@
-const { event } = window.__TAURI__;
+const { event, core } = window.__TAURI__;
+const { invoke } = core;
 
+const overlay = document.getElementById('overlay');
 const canvas = document.getElementById('waveform');
 const ctx = canvas.getContext('2d');
-const timerEl = document.getElementById('timer');
+const cancelBtn = document.getElementById('cancel-btn');
+const confirmBtn = document.getElementById('confirm-btn');
 
-const BAR_WIDTH = 3;
-const GAP = 3;
-const NUM_BARS = 30;
+const NUM_BARS = 10;
+const BAR_WIDTH = 2;
+const GAP = 2;
 
-let startTime = null;
-let timerInterval = null;
-let bars = new Array(NUM_BARS).fill(0);
-let canvasW = 180;
-let canvasH = 50;
+// Each bar oscillates with its own phase / frequency so the silhouette never
+// looks like a deterministic bell curve, but the bars stay in their slots
+// (no horizontal scrolling). Heights scale with the live audio level.
+const PHASE = new Array(NUM_BARS);
+const FREQ = new Array(NUM_BARS);
+const BIAS = new Array(NUM_BARS);
+for (let i = 0; i < NUM_BARS; i++) {
+  PHASE[i] = Math.random() * Math.PI * 2;
+  FREQ[i] = 1.6 + Math.random() * 2.4;       // 1.6–4.0 Hz per bar
+  BIAS[i] = 0.35 + Math.random() * 0.65;     // each bar has its own loudness gain
+}
+
+let level = 0;          // current displayed audio level (smoothed)
+let targetLevel = 0;    // latest level reported by backend
+let startedAt = 0;      // performance.now() at recording start
+let canvasW = 0;
+let canvasH = 22;
 let dpr = window.devicePixelRatio || 1;
+let rafId = null;
 
-// Set canvas size once
-canvas.width = canvasW * dpr;
-canvas.height = canvasH * dpr;
-canvas.style.width = canvasW + 'px';
-canvas.style.height = canvasH + 'px';
-ctx.scale(dpr, dpr);
-
-function startTimer() {
-  startTime = Date.now();
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const mins = Math.floor(elapsed / 60);
-    const secs = elapsed % 60;
-    timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, 200);
+function sizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvasW = rect.width || (NUM_BARS * (BAR_WIDTH + GAP));
+  canvasH = rect.height || 22;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
 }
 
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-  timerEl.textContent = '0:00';
-  startTime = null;
-}
-
-function drawWaveform() {
+function drawWaveform(now) {
   ctx.clearRect(0, 0, canvasW, canvasH);
 
+  const totalBarSpan = NUM_BARS * BAR_WIDTH + (NUM_BARS - 1) * GAP;
+  const startX = Math.max(0, (canvasW - totalBarSpan) / 2);
   const centerY = canvasH / 2;
+  const maxBarH = canvasH * 0.9;
 
-  for (let i = 0; i < bars.length; i++) {
-    const amplitude = bars[i] || 0;
-    const barHeight = Math.max(3, amplitude * (canvasH * 0.8));
-    const x = i * (BAR_WIDTH + GAP);
+  const t = (now - startedAt) / 1000; // seconds since recording started
 
-    const gradient = ctx.createLinearGradient(0, centerY - barHeight / 2, 0, centerY + barHeight / 2);
-    gradient.addColorStop(0, 'rgba(100, 180, 255, 0.9)');
-    gradient.addColorStop(1, 'rgba(100, 180, 255, 0.3)');
+  ctx.fillStyle = '#ffffff';
 
-    ctx.fillStyle = gradient;
+  for (let i = 0; i < NUM_BARS; i++) {
+    // Two layered sines per bar give an irregular, non-symmetric profile.
+    const wobble =
+      0.55 + 0.45 *
+      (0.6 * Math.sin(t * FREQ[i] + PHASE[i]) +
+        0.4 * Math.sin(t * FREQ[i] * 0.53 + PHASE[i] * 1.7));
+    const h = Math.max(2, BIAS[i] * wobble * level * maxBarH);
+    const x = startX + i * (BAR_WIDTH + GAP);
     ctx.beginPath();
-    ctx.roundRect(x, centerY - barHeight / 2, BAR_WIDTH, barHeight, 1.5);
+    ctx.roundRect(x, centerY - h / 2, BAR_WIDTH, h, BAR_WIDTH / 2);
     ctx.fill();
   }
 }
 
-// Backend emits a single RMS value per update; shift bars left and append
-// Raw RMS is very small for speech (~0.002–0.05), amplify with sqrt curve
+function tick(now) {
+  // Smooth toward the target level so volume changes look organic, not jittery.
+  level += (targetLevel - level) * 0.25;
+  drawWaveform(now || performance.now());
+  rafId = requestAnimationFrame(tick);
+}
+
+function startAnimation() {
+  if (rafId == null) rafId = requestAnimationFrame(tick);
+}
+
+function stopAnimation() {
+  if (rafId != null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+}
+
+function setThinking(on) {
+  overlay.classList.toggle('thinking', !!on);
+}
+
+function setLoading(on) {
+  overlay.classList.toggle('loading', !!on);
+}
+
 event.listen('waveform-update', (e) => {
   const rms = e.payload;
-  const display = Math.min(1.0, Math.sqrt(rms) * 4);
-  bars.shift();
-  bars.push(display);
-  drawWaveform();
+  // Map raw RMS (~0.002–0.05 typical speech) into a 0..1 visual range.
+  // Floor at 0.15 so the bell shape is always faintly visible while recording.
+  const mapped = Math.min(1.0, Math.sqrt(rms) * 4);
+  targetLevel = Math.max(0.15, mapped);
+});
+
+event.listen('recording-loading', () => {
+  setThinking(false);
+  setLoading(true);
 });
 
 event.listen('recording-started', () => {
-  startTimer();
-  bars.fill(0);
-  drawWaveform();
+  setLoading(false);
+  setThinking(false);
+  level = 0;
+  targetLevel = 0.15;
+  startedAt = performance.now();
+  for (let i = 0; i < NUM_BARS; i++) {
+    PHASE[i] = Math.random() * Math.PI * 2;
+  }
+  startAnimation();
 });
 
 event.listen('recording-stopped', () => {
-  stopTimer();
-  bars.fill(0);
-  drawWaveform();
+  setLoading(false);
+  targetLevel = 0;
+  setTimeout(() => {
+    stopAnimation();
+    level = 0;
+    drawWaveform(performance.now());
+  }, 200);
 });
 
-// Initial draw
-drawWaveform();
+event.listen('thinking-started', () => {
+  setThinking(true);
+});
+
+event.listen('thinking-stopped', () => {
+  setThinking(false);
+});
+
+cancelBtn.addEventListener('click', () => {
+  invoke('cancel_recording').catch(() => {});
+});
+
+confirmBtn.addEventListener('click', () => {
+  invoke('confirm_recording').catch(() => {});
+});
+
+window.addEventListener('resize', () => {
+  sizeCanvas();
+  drawWaveform(performance.now());
+});
+
+sizeCanvas();
+drawWaveform(performance.now());

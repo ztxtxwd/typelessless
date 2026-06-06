@@ -1,7 +1,6 @@
 mod audio;
 mod commands;
 mod config;
-mod model_manager;
 mod paste;
 mod recording;
 mod state;
@@ -17,28 +16,11 @@ pub fn run() {
     config::ensure_dirs();
 
     let cfg = config::load_config();
-
-    let mut engine = stt::SttEngine::from_engine_name(&cfg.engine);
-    let model_path = state::get_model_path_for_config(&cfg);
-    let has_model = if model_path.exists() {
-        match engine.load_model(&model_path) {
-            Ok(()) => {
-                println!("STT engine [{}] loaded: {}", cfg.engine, model_path.display());
-                true
-            }
-            Err(e) => {
-                eprintln!("Failed to load STT engine: {}", e);
-                false
-            }
-        }
-    } else {
-        println!("No model found for engine '{}'. Please download via Settings.", cfg.engine);
-        false
-    };
+    let api_key_missing = cfg.api_key.trim().is_empty();
 
     let app_state = AppState {
         recorder: Mutex::new(audio::AudioRecorder::new()),
-        engine: Mutex::new(engine),
+        engine: stt::DoubaoEngine::new(),
         config: Mutex::new(cfg),
         previous_app_pid: std::sync::atomic::AtomicI32::new(-1),
     };
@@ -66,9 +48,10 @@ pub fn run() {
             commands::get_config,
             commands::save_config,
             commands::list_audio_devices,
-            commands::check_model_exists,
-            commands::download_model,
+            commands::get_default_system_prompt,
             commands::change_shortcut,
+            commands::cancel_recording,
+            commands::confirm_recording,
         ])
         .on_window_event(|window, event| {
             if window.label() == "settings" {
@@ -79,12 +62,9 @@ pub fn run() {
             }
         })
         .setup(move |app| {
-            // Hide from Dock — tray-only app (macOS only)
             #[cfg(target_os = "macos")]
             app.handle().set_activation_policy(tauri::ActivationPolicy::Accessory)?;
 
-            // Prompt for Accessibility permission if not already granted
-            // (required for simulating Cmd+V paste)
             paste::ensure_accessibility_permission();
 
             tray::setup_tray(app.handle())?;
@@ -93,7 +73,7 @@ pub fn run() {
             let shortcut = app.state::<AppState>().config.lock().unwrap().shortcut.clone();
             app.global_shortcut().register(shortcut.as_str())?;
 
-            if !has_model {
+            if api_key_missing {
                 if let Some(window) = app.get_webview_window("settings") {
                     let _ = window.show();
                     let _ = window.set_focus();
@@ -104,5 +84,5 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("Error while running Light Whisper");
+        .expect("Error while running Typelessless");
 }

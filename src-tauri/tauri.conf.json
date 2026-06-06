@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicotsx/tauri-v2-schema/main/tauri.conf.json",
-  "productName": "Light Whisper",
+  "productName": "Typelessless",
   "version": "0.1.0",
-  "identifier": "com.lightwhisper.desktop",
+  "identifier": "com.typelessless.desktop",
   "build": {
     "frontendDist": "../src",
     "beforeDevCommand": "",
@@ -14,21 +14,23 @@
     "windows": [
       {
         "label": "recorder",
-        "title": "Light Whisper",
+        "title": "Typelessless",
         "url": "index.html",
-        "width": 280,
-        "height": 80,
+        "width": 220,
+        "height": 90,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "visible": false,
         "resizable": false,
-        "center": true
+        "center": true,
+        "shadow": false,
+        "focus": false
       },
       {
         "label": "settings",
-        "title": "Light Whisper - Settings",
+        "title": "Typelessless - Settings",
         "url": "settings.html",
         "width": 500,
         "height": 640,
