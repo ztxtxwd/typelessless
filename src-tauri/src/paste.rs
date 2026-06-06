@@ -38,8 +38,7 @@ mod macos_focus {
     pub fn activate_pid(pid: i32) {
         unsafe {
             type SendWithI32 = unsafe extern "C" fn(*mut c_void, *mut c_void, i32) -> *mut c_void;
-            type SendWithUsize =
-                unsafe extern "C" fn(*mut c_void, *mut c_void, usize) -> bool;
+            type SendWithUsize = unsafe extern "C" fn(*mut c_void, *mut c_void, usize) -> bool;
             let send_with_i32: SendWithI32 = std::mem::transmute(objc_msgSend as *const ());
             let send_with_usize: SendWithUsize = std::mem::transmute(objc_msgSend as *const ());
 
@@ -77,10 +76,7 @@ mod win_focus {
         fn IsWindow(hwnd: HWND) -> BOOL;
         fn IsWindowVisible(hwnd: HWND) -> BOOL;
         fn IsIconic(hwnd: HWND) -> BOOL;
-        fn EnumWindows(
-            lpEnumFunc: extern "system" fn(HWND, isize) -> BOOL,
-            lParam: isize,
-        ) -> BOOL;
+        fn EnumWindows(lpEnumFunc: extern "system" fn(HWND, isize) -> BOOL, lParam: isize) -> BOOL;
         fn AttachThreadInput(idAttach: DWORD, idAttachTo: DWORD, fAttach: BOOL) -> BOOL;
         fn BringWindowToTop(hwnd: HWND) -> BOOL;
         fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> BOOL;
@@ -163,7 +159,10 @@ mod win_focus {
             EnumWindows(enum_proc, &mut ctx as *mut FindCtx as isize);
 
             if ctx.found.is_null() {
-                eprintln!("[focus/win] activate_pid({}): no visible top-level window found", pid);
+                eprintln!(
+                    "[focus/win] activate_pid({}): no visible top-level window found",
+                    pid
+                );
                 return;
             }
             if IsWindow(ctx.found) == 0 {
@@ -201,7 +200,9 @@ mod win_focus {
 pub use win_focus::{activate_pid, get_frontmost_pid};
 
 #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
-pub fn get_frontmost_pid() -> i32 { -1 }
+pub fn get_frontmost_pid() -> i32 {
+    -1
+}
 
 #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
 pub fn activate_pid(_pid: i32) {}
@@ -243,7 +244,10 @@ pub fn paste_text(text: &str) -> Result<(), String> {
         format!("Text injection error: {}", e)
     })?;
 
-    eprintln!("[paste] (unicode-keys) done in {}ms", t0.elapsed().as_millis());
+    eprintln!(
+        "[paste] (unicode-keys) done in {}ms",
+        t0.elapsed().as_millis()
+    );
     Ok(())
 }
 
@@ -274,7 +278,10 @@ pub fn paste_text(text: &str) -> Result<(), String> {
     key_up.set_string(text);
     key_up.post(CGEventTapLocation::HID);
 
-    eprintln!("[paste] (cg-unicode) done in {}ms", t0.elapsed().as_millis());
+    eprintln!(
+        "[paste] (cg-unicode) done in {}ms",
+        t0.elapsed().as_millis()
+    );
     Ok(())
 }
 
@@ -291,11 +298,17 @@ pub fn paste_text(text: &str) -> Result<(), String> {
 
     let previous = match clipboard.get_text() {
         Ok(s) => {
-            eprintln!("[paste] saved previous clipboard ({} chars)", s.chars().count());
+            eprintln!(
+                "[paste] saved previous clipboard ({} chars)",
+                s.chars().count()
+            );
             Some(s)
         }
         Err(e) => {
-            eprintln!("[paste] could not read previous clipboard: {} (continuing)", e);
+            eprintln!(
+                "[paste] could not read previous clipboard: {} (continuing)",
+                e
+            );
             None
         }
     };
@@ -305,7 +318,10 @@ pub fn paste_text(text: &str) -> Result<(), String> {
         eprintln!("[paste] clipboard.set_text FAILED: {}", e);
         format!("Clipboard set error: {}", e)
     })?;
-    eprintln!("[paste] clipboard.set_text ok ({}ms)", t0.elapsed().as_millis());
+    eprintln!(
+        "[paste] clipboard.set_text ok ({}ms)",
+        t0.elapsed().as_millis()
+    );
 
     // Small delay to ensure clipboard is ready
     std::thread::sleep(std::time::Duration::from_millis(50));
@@ -313,7 +329,11 @@ pub fn paste_text(text: &str) -> Result<(), String> {
     // Simulate Cmd+V / Ctrl+V
     let t_sim = std::time::Instant::now();
     if let Err(e) = simulate_paste() {
-        eprintln!("[paste] simulate_paste FAILED after {}ms: {}", t_sim.elapsed().as_millis(), e);
+        eprintln!(
+            "[paste] simulate_paste FAILED after {}ms: {}",
+            t_sim.elapsed().as_millis(),
+            e
+        );
         // Still try to restore clipboard before bailing
         std::thread::sleep(std::time::Duration::from_millis(100));
         if let Some(prev) = previous {
@@ -321,7 +341,10 @@ pub fn paste_text(text: &str) -> Result<(), String> {
         }
         return Err(e);
     }
-    eprintln!("[paste] simulate_paste ok ({}ms)", t_sim.elapsed().as_millis());
+    eprintln!(
+        "[paste] simulate_paste ok ({}ms)",
+        t_sim.elapsed().as_millis()
+    );
 
     // Small delay then restore clipboard (best effort)
     std::thread::sleep(std::time::Duration::from_millis(100));
@@ -424,10 +447,12 @@ fn simulate_paste() -> Result<(), String> {
         format!("Key press error: {}", e)
     })?;
     eprintln!("[paste/sim] V click");
-    enigo.key(Key::Unicode('v'), Direction::Click).map_err(|e| {
-        eprintln!("[paste/sim] V click error: {}", e);
-        format!("Key click error: {}", e)
-    })?;
+    enigo
+        .key(Key::Unicode('v'), Direction::Click)
+        .map_err(|e| {
+            eprintln!("[paste/sim] V click error: {}", e);
+            format!("Key click error: {}", e)
+        })?;
     eprintln!("[paste/sim] Ctrl up");
     enigo.key(Key::Control, Direction::Release).map_err(|e| {
         eprintln!("[paste/sim] Ctrl release error: {}", e);

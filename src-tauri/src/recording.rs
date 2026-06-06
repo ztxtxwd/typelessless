@@ -30,7 +30,10 @@ fn hide_overlay(app: &AppHandle) {
 }
 
 fn restore_focus(app: &AppHandle) {
-    let pid = app.state::<AppState>().previous_app_pid.load(Ordering::SeqCst);
+    let pid = app
+        .state::<AppState>()
+        .previous_app_pid
+        .load(Ordering::SeqCst);
     if pid > 0 {
         paste::activate_pid(pid);
     }
@@ -153,7 +156,9 @@ pub fn confirm_recording(app: &AppHandle) {
                         truncate_for_log(&text, 80)
                     );
                     if text.is_empty() {
-                        eprintln!("[confirm] empty result — nothing to paste (model treated as silence)");
+                        eprintln!(
+                            "[confirm] empty result — nothing to paste (model treated as silence)"
+                        );
                     } else {
                         let prev_pid = state
                             .previous_app_pid
@@ -202,7 +207,11 @@ fn truncate_for_log(s: &str, max_chars: usize) -> String {
         s.replace('\n', "\\n")
     } else {
         let head: String = s.chars().take(max_chars).collect();
-        format!("{}…(+{} chars)", head.replace('\n', "\\n"), count - max_chars)
+        format!(
+            "{}…(+{} chars)",
+            head.replace('\n', "\\n"),
+            count - max_chars
+        )
     }
 }
 

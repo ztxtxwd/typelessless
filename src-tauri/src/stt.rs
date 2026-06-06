@@ -199,11 +199,20 @@ impl DoubaoEngine {
             .map_err(|e| format!("Failed to read response: {}", e))?;
 
         if !status.is_success() {
-            return Err(format!("Doubao API HTTP {}: {}", status, truncate(&text, 500)));
+            return Err(format!(
+                "Doubao API HTTP {}: {}",
+                status,
+                truncate(&text, 500)
+            ));
         }
 
-        let parsed: ResponsesReply = serde_json::from_str(&text)
-            .map_err(|e| format!("Invalid response JSON: {} | body: {}", e, truncate(&text, 300)))?;
+        let parsed: ResponsesReply = serde_json::from_str(&text).map_err(|e| {
+            format!(
+                "Invalid response JSON: {} | body: {}",
+                e,
+                truncate(&text, 300)
+            )
+        })?;
 
         if let Some(err) = parsed.error {
             return Err(format!(
@@ -214,9 +223,7 @@ impl DoubaoEngine {
         }
 
         for item in &parsed.output {
-            if item.kind == "function_call"
-                && item.name.as_deref() == Some("report_no_speech")
-            {
+            if item.kind == "function_call" && item.name.as_deref() == Some("report_no_speech") {
                 return Ok(String::new());
             }
         }

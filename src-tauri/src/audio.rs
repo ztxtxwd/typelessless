@@ -112,10 +112,11 @@ fn run_recording(
     // Helper to forward errors back to the caller via the ready channel before
     // returning them. We only send one message on the channel — after that
     // signaling is done via the `recording` AtomicBool / app events.
-    let signal_err = |tx: &std::sync::mpsc::SyncSender<Result<(), String>>, err: String| -> String {
-        let _ = tx.send(Err(err.clone()));
-        err
-    };
+    let signal_err =
+        |tx: &std::sync::mpsc::SyncSender<Result<(), String>>, err: String| -> String {
+            let _ = tx.send(Err(err.clone()));
+            err
+        };
     let host = cpal::default_host();
 
     let device = if device_name == "default" {
@@ -127,7 +128,10 @@ fn run_recording(
         let iter = host
             .input_devices()
             .map_err(|e| signal_err(&ready_tx, format!("Cannot enumerate devices: {}", e)))?;
-        match iter.into_iter().find(|d| d.name().map(|n| n == device_name).unwrap_or(false)) {
+        match iter
+            .into_iter()
+            .find(|d| d.name().map(|n| n == device_name).unwrap_or(false))
+        {
             Some(d) => d,
             None => {
                 return Err(signal_err(
@@ -197,8 +201,7 @@ fn run_recording(
                     let mono: Vec<f32> = data
                         .chunks(channels)
                         .map(|frame| {
-                            frame.iter().map(|&s| s as f32 / 32768.0).sum::<f32>()
-                                / channels as f32
+                            frame.iter().map(|&s| s as f32 / 32768.0).sum::<f32>() / channels as f32
                         })
                         .collect();
 

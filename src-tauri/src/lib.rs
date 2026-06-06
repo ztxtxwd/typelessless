@@ -7,9 +7,9 @@ mod state;
 mod stt;
 mod tray;
 
+use state::AppState;
 use std::sync::Mutex;
 use tauri::Manager;
-use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -63,14 +63,21 @@ pub fn run() {
         })
         .setup(move |app| {
             #[cfg(target_os = "macos")]
-            app.handle().set_activation_policy(tauri::ActivationPolicy::Accessory)?;
+            app.handle()
+                .set_activation_policy(tauri::ActivationPolicy::Accessory)?;
 
             paste::ensure_accessibility_permission();
 
             tray::setup_tray(app.handle())?;
 
             use tauri_plugin_global_shortcut::GlobalShortcutExt;
-            let shortcut = app.state::<AppState>().config.lock().unwrap().shortcut.clone();
+            let shortcut = app
+                .state::<AppState>()
+                .config
+                .lock()
+                .unwrap()
+                .shortcut
+                .clone();
             app.global_shortcut().register(shortcut.as_str())?;
 
             if api_key_missing {
