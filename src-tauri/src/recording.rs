@@ -272,8 +272,9 @@ fn position_bottom_center(app: &AppHandle, window: &tauri::WebviewWindow) {
     // Horizontal center within the monitor.
     let x = screen_pos.x + ((screen_size.width as i32 - win_size.width as i32) / 2);
 
-    // ~15% above the bottom edge of the monitor.
-    let bottom_margin_px = (screen_size.height as f64 * 0.15).round() as i32;
+    // ~5% above the bottom edge of the monitor — close to the bottom but
+    // clear of the taskbar / dock.
+    let bottom_margin_px = (screen_size.height as f64 * 0.05).round() as i32;
     let y = screen_pos.y + screen_size.height as i32 - win_size.height as i32 - bottom_margin_px;
 
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
