@@ -1,0 +1,63 @@
+name: Build macOS DMG (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-macos-${{ inputs.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --locked --version "^2"
+
+      - name: Build Tauri app
+        run: cargo tauri build --target aarch64-apple-darwin
+
+      - name: Read app version
+        id: meta
+        shell: bash
+        run: |
+          VERSION=$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path('src-tauri/tauri.conf.json').read_text())['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: typelessless-macos-dmg-aarch64-v${{ steps.meta.outputs.version }}
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+      - name: Upload app bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: typelessless-macos-app-aarch64-v${{ steps.meta.outputs.version }}
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: error
