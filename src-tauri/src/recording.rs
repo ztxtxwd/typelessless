@@ -159,6 +159,7 @@ pub fn confirm_recording(app: &AppHandle) {
                         eprintln!(
                             "[confirm] empty result — nothing to paste (model treated as silence)"
                         );
+                        restore_focus(app);
                     } else {
                         let prev_pid = state
                             .previous_app_pid
@@ -215,14 +216,14 @@ fn truncate_for_log(s: &str, max_chars: usize) -> String {
     }
 }
 
-pub fn do_toggle_recording(app: &AppHandle) {
+pub fn do_toggle_recording(app: &AppHandle, frontmost_pid: Option<i32>) {
     let state = app.state::<AppState>();
     let is_recording = state.recorder.lock().unwrap().is_recording();
 
     if is_recording {
         confirm_recording(app);
     } else {
-        let pid = paste::get_frontmost_pid();
+        let pid = frontmost_pid.unwrap_or_else(paste::get_frontmost_pid);
         state.previous_app_pid.store(pid, Ordering::SeqCst);
 
         let device = state.config.lock().unwrap().audio_device.clone();

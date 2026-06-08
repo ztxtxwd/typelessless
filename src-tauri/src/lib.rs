@@ -32,11 +32,16 @@ pub fn run() {
                     if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                         let app = app.clone();
                         let is_escape = shortcut.key == tauri_plugin_global_shortcut::Code::Escape;
+                        let frontmost_pid = if is_escape {
+                            None
+                        } else {
+                            Some(paste::get_frontmost_pid())
+                        };
                         std::thread::spawn(move || {
                             if is_escape {
                                 recording::cancel_recording(&app);
                             } else {
-                                recording::do_toggle_recording(&app);
+                                recording::do_toggle_recording(&app, frontmost_pid);
                             }
                         });
                     }
