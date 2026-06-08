@@ -172,7 +172,8 @@ mod win_focus {
 
             let target_thread = GetWindowThreadProcessId(ctx.found, std::ptr::null_mut());
             let our_thread = GetCurrentThreadId();
-            let attached = AttachThreadInput(our_thread, target_thread, 1) != 0;
+            let attached = !(target_thread == 0 || target_thread == our_thread)
+                && AttachThreadInput(our_thread, target_thread, 1) != 0;
 
             // Only restore if minimised — calling SW_RESTORE on a fullscreen
             // window forces it out of fullscreen mode. SW_RESTORE = 9.

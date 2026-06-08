@@ -18,7 +18,14 @@ impl Default for AppConfig {
         Self {
             audio_device: "default".to_string(),
             language: "auto".to_string(),
-            shortcut: "Alt+Space".to_string(),
+            // F8 chosen over Alt+Space because Alt is uniquely painful on
+            // Windows: it triggers menu-activation mode, routes injected
+            // VK_PACKET as WM_SYSCHAR (which editor views drop), and lingers
+            // in OS input state if the user holds the chord too long. F8 has
+            // no global Windows binding, no browser binding, and although VS
+            // Code uses it as "next error" in-editor, RegisterHotKey wins
+            // before the editor's keymap sees the keydown.
+            shortcut: "F8".to_string(),
             api_key: String::new(),
             model: "doubao-seed-2-0-lite-260428".to_string(),
             system_prompt: crate::stt::DEFAULT_SYSTEM_PROMPT.to_string(),
