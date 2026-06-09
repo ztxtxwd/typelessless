@@ -1,6 +1,6 @@
 # Typelessless
 
-A lightweight desktop app for global voice-to-text. Press **Alt+Space** anywhere to start recording, press again to transcribe and paste the result into the active application.
+A lightweight desktop app for global voice-to-text. Press **F8** anywhere to start recording, press again to transcribe and paste the result into the active application.
 
 Speech is transcribed and polished by **Doubao** (Volcengine ARK Responses API), so the result you paste is already cleaned-up text — filler words removed, punctuation added, optional follow-up instructions honored.
 
@@ -14,7 +14,7 @@ Typelessless is a fork of [Light Whisper](https://github.com/aluzed/light-whispe
 
 ## Features
 
-- **Global hotkey** (Alt+Space, rebindable) works from any application
+- **Global hotkey** (F8, rebindable) works from any application
 - **Doubao transcription + polishing** in one round-trip — the model fixes filler words, punctuation, and obvious disfluencies while preserving your intent
 - **Inline instructions** — speaking commands like "改写成正式邮件" or "转成 bullet points" makes the model reformat the output before it gets pasted
 - **Auto-paste** via clipboard + simulated Cmd/Ctrl+V into the previously focused window
@@ -87,7 +87,7 @@ cd src-tauri && cargo build
 1. **Launch the app** — if no API key is configured, the Settings window opens automatically
 2. **Paste your Doubao API key** (`ARK_API_KEY` from the Volcengine ARK console) and choose a model
 3. **Save settings** and close the window
-4. **Record** — press `Alt+Space` to start, `Alt+Space` again (or click ✓) to transcribe; press `Esc` (or click ✕) to cancel
+4. **Record** — press `F8` to start, `F8` again (or click ✓) to transcribe; press `Esc` (or click ✕) to cancel
 5. **Result** — transcribed and polished text is automatically pasted into whatever app was focused
 6. Access settings any time via the **tray icon**
 
@@ -99,7 +99,7 @@ cd src-tauri && cargo build
 | Doubao API Key | `ARK_API_KEY` from the [Volcengine ARK console](https://console.volcengine.com/ark). Stored in plaintext in `config.json`. |
 | Doubao Model | Defaults to `doubao-seed-2-0-lite-260428`. Any ARK Responses-compatible audio-input model can be entered. |
 | Language | Default prompt language sent alongside the audio (`auto`, `zh`, `en`, `fr`). |
-| Shortcut | Global hotkey (default `Alt+Space`). Click **Assign** in Settings, then press the new combo. |
+| Shortcut | Global hotkey (default `F8`). Click **Assign** in Settings, then press the new combo. |
 
 ## Permissions (macOS)
 
@@ -142,6 +142,10 @@ Windows uses `%TEMP%\typelessless\` for temp files.
 ## Privacy
 
 Audio is sent to Volcengine's ARK API for transcription. Read their terms before using this on sensitive recordings. No audio is stored or sent anywhere else by this app.
+
+## Community
+
+加入用户交流群（飞书）：[applink.feishu.cn](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=fd5n6f06-0bc5-4177-8851-3970181e7ed6)
 
 ## License
 
