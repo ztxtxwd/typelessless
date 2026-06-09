@@ -25,3 +25,5 @@ node_modules/
 # IDE
 .vscode/
 .idea/
+
+.mcp.json
